@@ -1,0 +1,41 @@
+name: Manual EC2 Control
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Action to perform (start/stop)"
+        required: true
+        type: choice
+        options:
+          - start
+          - stop
+
+jobs:
+  manage-ec2-instance:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ap-south-1 # Replace with your AWS region
+
+    - name: Perform EC2 Action
+      run: |
+        INSTANCE_ID="i-1234567890abcdef0" # Replace with your EC2 instance ID
+        if [[ "${{ github.event.inputs.action }}" == "start" ]]; then
+          echo "Starting EC2 instance..."
+          aws ec2 start-instances --instance-ids $INSTANCE_ID
+        elif [[ "${{ github.event.inputs.action }}" == "stop" ]]; then
+          echo "Stopping EC2 instance..."
+          aws ec2 stop-instances --instance-ids $INSTANCE_ID
+        else
+          echo "Invalid action: ${{ github.event.inputs.action }}"
+          exit 1
+        fi
