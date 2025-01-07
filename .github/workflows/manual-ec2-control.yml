@@ -4,38 +4,63 @@ on:
   workflow_dispatch:
     inputs:
       action:
-        description: "Action to perform (start/stop)"
+        description: "Choose an action: start or stop"
         required: true
+        default: "start"
         type: choice
         options:
           - start
           - stop
 
 jobs:
-  manage-ec2-instance:
+  manual-ec2-control:
     runs-on: ubuntu-latest
-
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+      - name: Checkout Code
+        uses: actions/checkout@v3
 
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v2
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ap-south-1 # Replace with your AWS region
+      - name: Set up AWS CLI
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-south-1  # Replace with your AWS region if different
 
-    - name: Perform EC2 Action
-      run: |
-        INSTANCE_ID="i-03613c3a66bc4e6fd" # Replace with your EC2 instance ID
-        if [[ "${{ github.event.inputs.action }}" == "start" ]]; then
-          echo "Starting EC2 instance..."
-          aws ec2 start-instances --instance-ids $INSTANCE_ID
-        elif [[ "${{ github.event.inputs.action }}" == "stop" ]]; then
-          echo "Stopping EC2 instance..."
-          aws ec2 stop-instances --instance-ids $INSTANCE_ID
-        else
-          echo "Invalid action: ${{ github.event.inputs.action }}"
-          exit 1
-        fi
+      - name: Perform Manual EC2 Action
+        run: |
+          #!/bin/bash
+          set -e
+
+          # Instance ID - Replace with your EC2 instance ID
+          INSTANCE_ID="i-03613c3a66bc4e6fd"
+
+          # Action to perform: start or stop
+          ACTION="${{ github.event.inputs.action }}"
+
+          # Get the current state of the instance
+          INSTANCE_STATE=$(aws ec2 describe-instances \
+            --instance-ids "$INSTANCE_ID" \
+            --query "Reservations[*].Instances[*].State.Name" \
+            --output text)
+
+          echo "Current EC2 instance state: $INSTANCE_STATE"
+
+          # Decide the action based on input and current state
+          if [ "$ACTION" == "start" ]; then
+            if [ "$INSTANCE_STATE" != "running" ]; then
+              echo "Starting EC2 instance: $INSTANCE_ID"
+              aws ec2 start-instances --instance-ids "$INSTANCE_ID"
+            else
+              echo "EC2 instance: $INSTANCE_ID is already running. No action needed."
+            fi
+          elif [ "$ACTION" == "stop" ]; then
+            if [ "$INSTANCE_STATE" != "stopped" ]; then
+              echo "Stopping EC2 instance: $INSTANCE_ID"
+              aws ec2 stop-instances --instance-ids "$INSTANCE_ID"
+            else
+              echo "EC2 instance: $INSTANCE_ID is already stopped. No action needed."
+            fi
+          else
+            echo "Invalid action: $ACTION. Use 'start' or 'stop'."
+            exit 1
+          fi
