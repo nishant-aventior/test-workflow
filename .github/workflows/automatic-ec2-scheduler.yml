@@ -1,0 +1,52 @@
+name: Automatic EC2 Scheduler
+
+on:
+  schedule:
+    # Scale up EC2 instance at 12:00 Midnight IST (Sunday to Friday)
+    - cron: '30 18 * * 0-5'
+    # Stop EC2 instance at 08:00 PM IST (Sunday to Friday)
+    - cron: '30 14 * * 0-5'
+
+jobs:
+  manage-ec2-instance:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ap-south-1 # Replace with your AWS region
+
+    - name: Determine EC2 Action
+      id: determine-action
+      run: |
+        # Get the current day of the week (0 = Sunday, 6 = Saturday)
+        DAY_OF_WEEK=$(date +%u)
+
+        # Set action based on the schedule
+        if [[ "$DAY_OF_WEEK" -eq 6 ]]; then
+          echo "action=none" >> $GITHUB_ENV
+        elif [[ "$GITHUB_EVENT_SCHEDULE" == "30 18 * * 0-5" ]]; then
+          echo "action=start" >> $GITHUB_ENV
+        elif [[ "$GITHUB_EVENT_SCHEDULE" == "30 14 * * 0-5" ]]; then
+          echo "action=stop" >> $GITHUB_ENV
+        else
+          echo "action=none" >> $GITHUB_ENV
+        fi
+
+    - name: Manage EC2 Instance
+      if: env.action != 'none'
+      run: |
+        INSTANCE_ID="i-1234567890abcdef0" # Replace with your EC2 instance ID
+        if [[ "$action" == "start" ]]; then
+          echo "Starting EC2 instance..."
+          aws ec2 start-instances --instance-ids $INSTANCE_ID
+        elif [[ "$action" == "stop" ]]; then
+          echo "Stopping EC2 instance..."
+          aws ec2 stop-instances --instance-ids $INSTANCE_ID
+        fi
