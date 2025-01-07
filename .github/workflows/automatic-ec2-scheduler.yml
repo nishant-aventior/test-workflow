@@ -42,7 +42,7 @@ jobs:
     - name: Manage EC2 Instance
       if: env.action != 'none'
       run: |
-        INSTANCE_ID="ami-053b12d3152c0cc71" # Replace with your EC2 instance ID
+        INSTANCE_ID="i-03613c3a66bc4e6fd" # Replace with your EC2 instance ID
         if [[ "$action" == "start" ]]; then
           echo "Starting EC2 instance..."
           aws ec2 start-instances --instance-ids $INSTANCE_ID
