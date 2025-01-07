@@ -2,10 +2,10 @@ name: Automatic EC2 Scheduler
 
 on:
   schedule:
-    # Scale up EC2 instance at 12:00 Midnight IST (Sunday to Friday)
-    - cron: '30 18 * * 0-5'
-    # Stop EC2 instance at 08:00 PM IST (Sunday to Friday)
-    - cron: '30 14 * * 0-5'
+    # Stop EC2 instance at 12:00 Midnight IST (Sunday to Friday)
+    - cron: '30 18 * * 0-5' # 18:30 UTC = 12:00 Midnight IST
+    # Start EC2 instance at 08:00 AM IST (Sunday to Friday)
+    - cron: '30 2 * * 0-5'  # 02:30 UTC = 08:00 AM IST
 
 jobs:
   manage-ec2-instance:
@@ -25,16 +25,11 @@ jobs:
     - name: Determine EC2 Action
       id: determine-action
       run: |
-        # Get the current day of the week (0 = Sunday, 6 = Saturday)
-        DAY_OF_WEEK=$(date +%u)
-
-        # Set action based on the schedule
-        if [[ "$DAY_OF_WEEK" -eq 6 ]]; then
-          echo "action=none" >> $GITHUB_ENV
-        elif [[ "$GITHUB_EVENT_SCHEDULE" == "30 18 * * 0-5" ]]; then
-          echo "action=start" >> $GITHUB_ENV
-        elif [[ "$GITHUB_EVENT_SCHEDULE" == "30 14 * * 0-5" ]]; then
+        # Get the current schedule event (start or stop)
+        if [[ "$GITHUB_EVENT_SCHEDULE" == "30 18 * * 0-5" ]]; then
           echo "action=stop" >> $GITHUB_ENV
+        elif [[ "$GITHUB_EVENT_SCHEDULE" == "30 2 * * 0-5" ]]; then
+          echo "action=start" >> $GITHUB_ENV
         else
           echo "action=none" >> $GITHUB_ENV
         fi
@@ -43,10 +38,17 @@ jobs:
       if: env.action != 'none'
       run: |
         INSTANCE_ID="i-03613c3a66bc4e6fd" # Replace with your EC2 instance ID
-        if [[ "$action" == "start" ]]; then
+        INSTANCE_STATE=$(aws ec2 describe-instances \
+          --instance-ids "$INSTANCE_ID" \
+          --query "Reservations[*].Instances[*].State.Name" \
+          --output text)
+
+        if [[ "$action" == "start" && "$INSTANCE_STATE" != "running" ]]; then
           echo "Starting EC2 instance..."
-          aws ec2 start-instances --instance-ids $INSTANCE_ID
-        elif [[ "$action" == "stop" ]]; then
+          aws ec2 start-instances --instance-ids "$INSTANCE_ID"
+        elif [[ "$action" == "stop" && "$INSTANCE_STATE" != "stopped" ]]; then
           echo "Stopping EC2 instance..."
-          aws ec2 stop-instances --instance-ids $INSTANCE_ID
+          aws ec2 stop-instances --instance-ids "$INSTANCE_ID"
+        else
+          echo "No action needed. Instance is already in the desired state."
         fi
