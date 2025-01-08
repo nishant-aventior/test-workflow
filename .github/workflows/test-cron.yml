@@ -2,8 +2,8 @@ name: Cron Job Test
 
 on:
   schedule:
-    # Run Monday to Friday at 8:30 AM IST
-    - cron: '00 3 * * 1-5' # Adjusted for UTC (IST is UTC+5:30)
+    # Run Monday to Friday at 8:37 AM IST
+    - cron: '07 3 * * 1-5' # Adjusted for UTC (IST is UTC+5:30)
 
 jobs:
   test-cron:
