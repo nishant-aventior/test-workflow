@@ -3,9 +3,9 @@ name: EC2 Instance Automation
 on:
   schedule:
     # Trigger at 7:20 AM IST (1:50 AM UTC) to start the instance (Sunday to Friday)
-    - cron: "50 1 * * 0-5"
-    # Trigger at 7:22 AM IST (1:52 AM UTC) to stop the instance (Sunday to Friday)
-    - cron: "52 1 * * 0-5"
+    - cron: "54 1 * * 0-5"
+    # Trigger at 7:25 AM IST (1:55 AM UTC) to stop the instance (Sunday to Friday)
+    - cron: "59 1 * * 0-5"
 
 jobs:
   manage-ec2-instance:
@@ -21,6 +21,11 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ap-south-1  # Replace with your AWS region
+
+      - name: Log Current Date and Time (Debug)
+        run: |
+          echo "Current Date and Time (UTC): $(date)"
+          echo "GitHub Actions Event Schedule: ${{ github.event.schedule }}"
 
       - name: Perform EC2 Action
         run: |
@@ -47,7 +52,7 @@ jobs:
             else
               echo "EC2 instance: $INSTANCE_ID is already running. No action needed."
             fi
-          elif [[ "${{ github.event.schedule }}" == "52 1 * * 0-5" ]]; then
+          elif [[ "${{ github.event.schedule }}" == "55 1 * * 0-5" ]]; then
             # Stop EC2 instance if not stopped
             if [ "$INSTANCE_STATE" != "stopped" ]; then
               echo "Stopping EC2 instance: $INSTANCE_ID"
