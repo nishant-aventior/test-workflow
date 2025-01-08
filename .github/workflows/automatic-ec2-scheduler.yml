@@ -2,7 +2,7 @@ name: Automatic EC2 Scheduler
 
 on:
   schedule:
-    - cron: '30 1 * * 1-5' # 01:30 UTC = 7:00 AM IST (Stop Instance, Monday to Friday)
+    - cron: '34 1 * * 1-5' # 01:30 UTC = 7:00 AM IST (Stop Instance, Monday to Friday)
     - cron: '35 1 * * 1-5' # 01:35 UTC = 7:05 AM IST (Start Instance, Monday to Friday)
 
 jobs:
