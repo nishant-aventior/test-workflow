@@ -1,11 +1,16 @@
-name: Automatic EC2 Scheduler
+name: Manual EC2 Control
 
 on:
-  schedule:
-    # Start EC2 instance at 7:57 AM IST (Sunday to Friday)
-    - cron: '27 2 * * 0-5'  # 2:27 AM UTC = 7:57 AM IST
-    # Stop EC2 instance at 8:03 AM IST (Sunday to Friday)
-    - cron: '33 2 * * 0-5'  # 2:33 AM UTC = 8:03 AM IST
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Choose an action: start or stop"
+        required: true
+        default: "start"
+        type: choice
+        options:
+          - start
+          - stop
 
 jobs:
   manage-ec2-instance:
@@ -29,15 +34,12 @@ jobs:
       - name: Set EC2 Action
         id: set-action
         run: |
-          # Debug the CRON time triggered
-          echo "Triggered CRON Time: ${{ github.event.schedule }}"
+          # Get the action to be performed from the workflow dispatch input
+          ACTION="${{ github.event.inputs.action }}"
           
-          # Get the current time of the cron job that triggered this workflow
-          CRON_TIME="${{ github.event.schedule }}"
-
-          if [[ "$CRON_TIME" == "27 2 * * 0-5" ]]; then
+          if [[ "$ACTION" == "start" ]]; then
             echo "action=start" >> $GITHUB_ENV
-          elif [[ "$CRON_TIME" == "33 2 * * 0-5" ]]; then
+          elif [[ "$ACTION" == "stop" ]]; then
             echo "action=stop" >> $GITHUB_ENV
           else
             echo "action=none" >> $GITHUB_ENV
