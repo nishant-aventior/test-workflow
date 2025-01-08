@@ -2,12 +2,14 @@ name: Cron Job Test
 
 on:
   schedule:
-    # Run Monday to Friday at 8:37 AM IST
-    - cron: '07 3 * * 1-5' # Adjusted for UTC (IST is UTC+5:30)
+    # Run Monday to Friday at 8:41 AM IST (3:11 AM UTC)
+    - cron: '11 3 * * 1-5' # Adjusted for UTC (IST is UTC+5:30)
 
 jobs:
   test-cron:
     runs-on: ubuntu-latest
     steps:
       - name: Display current time
-        run: echo "The cron job is working! Current UTC time: $(date -u)"
+        run: |
+          echo "The cron job is working!"
+          echo "Current UTC time: $(date -u)"
