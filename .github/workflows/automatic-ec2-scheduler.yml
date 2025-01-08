@@ -1,51 +1,40 @@
-name: Automatic EC2 Scheduler
+name: EC2 Instance Automation
 
 on:
   schedule:
-    - cron: '34 1 * * 1-5' # 01:30 UTC = 7:00 AM IST (Stop Instance, Monday to Friday)
-    - cron: '35 1 * * 1-5' # 01:35 UTC = 7:05 AM IST (Start Instance, Monday to Friday)
+    # Trigger at 7:10 AM IST (1:40 AM UTC) to stop the instance (Sunday to Friday)
+    - cron: "40 1 * * 0-5"
+    # Trigger at 7:13 AM IST (1:43 AM UTC) to start the instance (Sunday to Friday)
+    - cron: "43 1 * * 0-5"
 
 jobs:
   manage-ec2-instance:
     runs-on: ubuntu-latest
 
+    env:
+      INSTANCE_ID: i-03613c3a66bc4e6fd
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
 
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v2
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ap-south-1 # Replace with your AWS region
-
-    - name: Determine EC2 Action
+    - name: Configure AWS CLI
       run: |
-        CURRENT_HOUR=$(date -u +%H%M) # Get current hour and minute in UTC
+        mkdir -p ~/.aws
+        echo "[default]" > ~/.aws/credentials
+        echo "aws_access_key_id=${{ secrets.AWS_ACCESS_KEY_ID }}" >> ~/.aws/credentials
+        echo "aws_secret_access_key=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> ~/.aws/credentials
+        echo "[default]" > ~/.aws/config
+        echo "region=${{ secrets.AWS_REGION }}" >> ~/.aws/config
 
-        if [ "$CURRENT_HOUR" == "0130" ]; then
-          echo "action=stop" >> $GITHUB_ENV
-        elif [ "$CURRENT_HOUR" == "0135" ]; then
-          echo "action=start" >> $GITHUB_ENV
-        else
-          echo "action=none" >> $GITHUB_ENV
-        fi
-
-    - name: Manage EC2 Instance
-      if: ${{ env.action != 'none' }}
+    - name: Stop EC2 Instance at 7:10 AM IST
+      if: github.event.schedule == "40 1 * * 0-5"
       run: |
-        INSTANCE_ID="i-03613c3a66bc4e6fd" # Replace with your EC2 instance ID
-        INSTANCE_STATE=$(aws ec2 describe-instances \
-          --instance-ids "$INSTANCE_ID" \
-          --query "Reservations[*].Instances[*].State.Name" \
-          --output text)
-        if [[ "$env.action" == "start" && "$INSTANCE_STATE" != "running" ]]; then
-          echo "Starting EC2 instance..."
-          aws ec2 start-instances --instance-ids "$INSTANCE_ID"
-        elif [[ "$env.action" == "stop" && "$INSTANCE_STATE" != "stopped" ]]; then
-          echo "Stopping EC2 instance..."
-          aws ec2 stop-instances --instance-ids "$INSTANCE_ID"
-        else
-          echo "No action needed. Instance is already in the desired state."
-        fi
+        aws ec2 stop-instances --instance-ids $INSTANCE_ID
+        echo "EC2 instance $INSTANCE_ID stopped."
+
+    - name: Start EC2 Instance at 7:13 AM IST
+      if: github.event.schedule == "43 1 * * 0-5"
+      run: |
+        aws ec2 start-instances --instance-ids $INSTANCE_ID
+        echo "EC2 instance $INSTANCE_ID started."
