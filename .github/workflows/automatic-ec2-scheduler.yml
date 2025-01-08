@@ -31,9 +31,9 @@ jobs:
         # Set action based on the schedule
         if [[ "$DAY_OF_WEEK" -eq 6 ]]; then
           echo "action=none" >> $GITHUB_ENV
-        elif [[ "$GITHUB_EVENT_SCHEDULE" == "15 2 * * 0-5" ]]; then
+        elif [[ "$GITHUB_EVENT_SCHEDULE" == "12 2 * * 0-5" ]]; then
           echo "action=start" >> $GITHUB_ENV
-        elif [[ "$GITHUB_EVENT_SCHEDULE" == "20 2 * * 0-5" ]]; then
+        elif [[ "$GITHUB_EVENT_SCHEDULE" == "17 2 * * 0-5" ]]; then
           echo "action=stop" >> $GITHUB_ENV
         else
           echo "action=none" >> $GITHUB_ENV
