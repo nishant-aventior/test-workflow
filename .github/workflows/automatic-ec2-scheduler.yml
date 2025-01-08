@@ -3,9 +3,9 @@ name: EC2 Instance Automation
 on:
   schedule:
     # Trigger at 7:10 AM IST (1:40 AM UTC) to stop the instance (Sunday to Friday)
-    - cron: "40 1 * * 0-5"
+    - cron: "46 1 * * 0-5"
     # Trigger at 7:13 AM IST (1:43 AM UTC) to start the instance (Sunday to Friday)
-    - cron: "43 1 * * 0-5"
+    - cron: "48 1 * * 0-5"
 
 jobs:
   manage-ec2-instance:
