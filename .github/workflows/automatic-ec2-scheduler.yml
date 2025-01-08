@@ -2,9 +2,9 @@ name: Automatic EC2 Scheduler
 
 on:
   schedule:
-    # Start EC2 instance at 7:33 AM IST (Sunday to Friday)
+    # Start EC2 instance at 7:43 AM IST (Sunday to Friday)
     - cron: '12 2 * * 0-5'  # 2:12 AM UTC = 7:33 AM IST
-    # Stop EC2 instance at 7:38 AM IST (Sunday to Friday)
+    # Stop EC2 instance at 7:48 AM IST (Sunday to Friday)
     - cron: '17 2 * * 0-5'  # 2:17 AM UTC = 7:38 AM IST
 
 jobs:
