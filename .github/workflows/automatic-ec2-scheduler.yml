@@ -2,8 +2,8 @@ name: Automatic EC2 Scheduler
 
 on:
   schedule:
-    - cron: '15 1 * * 0-5' # 01:15 UTC = 6:45 AM IST (Stop Instance)
-    - cron: '20 1 * * 0-5' # 01:20 UTC = 6:50 AM IST (Start Instance)
+    - cron: '20 1 * * 0-5' # 01:20 UTC = 6:50 AM IST (Stop Instance)
+    - cron: '25 1 * * 0-5' # 01:25 UTC = 6:55 AM IST (Start Instance)
 
 jobs:
   manage-ec2-instance:
