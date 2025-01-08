@@ -1,66 +1,52 @@
-name: EC2 Instance Automation
+name: Automatic EC2 Scheduler
 
 on:
   schedule:
-    # Trigger at 7:20 AM IST (1:50 AM UTC) to start the instance (Sunday to Friday)
-    - cron: "54 1 * * 0-5"
-    # Trigger at 7:25 AM IST (1:55 AM UTC) to stop the instance (Sunday to Friday)
-    - cron: "59 1 * * 0-5"
+    # Start EC2 instance at 7:33 AM IST (Sunday to Friday)
+    - cron: '3 2 * * 0-5'  # 2:33 AM UTC = 7:33 AM IST
+    # Stop EC2 instance at 7:38 AM IST (Sunday to Friday)
+    - cron: '8 2 * * 0-5'  # 2:38 AM UTC = 7:38 AM IST
 
 jobs:
   manage-ec2-instance:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
+    - name: Checkout repository
+      uses: actions/checkout@v3
 
-      - name: Set up AWS CLI
-        uses: aws-actions/configure-aws-credentials@v3
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ap-south-1  # Replace with your AWS region
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ap-south-1 # Replace with your AWS region
 
-      - name: Log Current Date and Time (Debug)
-        run: |
-          echo "Current Date and Time (UTC): $(date)"
-          echo "GitHub Actions Event Schedule: ${{ github.event.schedule }}"
+    - name: Determine EC2 Action
+      id: determine-action
+      run: |
+        # Get the current day of the week (0 = Sunday, 6 = Saturday)
+        DAY_OF_WEEK=$(date +%u)
 
-      - name: Perform EC2 Action
-        run: |
-          #!/bin/bash
-          set -e
+        # Set action based on the schedule
+        if [[ "$DAY_OF_WEEK" -eq 6 ]]; then
+          echo "action=none" >> $GITHUB_ENV
+        elif [[ "$GITHUB_EVENT_SCHEDULE" == "3 2 * * 0-5" ]]; then
+          echo "action=start" >> $GITHUB_ENV
+        elif [[ "$GITHUB_EVENT_SCHEDULE" == "8 2 * * 0-5" ]]; then
+          echo "action=stop" >> $GITHUB_ENV
+        else
+          echo "action=none" >> $GITHUB_ENV
+        fi
 
-          # Instance ID - Replace with your EC2 instance ID
-          INSTANCE_ID="i-03613c3a66bc4e6fd"
-
-          # Get the current state of the instance
-          INSTANCE_STATE=$(aws ec2 describe-instances \
-            --instance-ids "$INSTANCE_ID" \
-            --query "Reservations[*].Instances[*].State.Name" \
-            --output text)
-
-          echo "Current EC2 instance state: $INSTANCE_STATE"
-
-          # Determine whether to start or stop based on the cron time
-          if [[ "${{ github.event.schedule }}" == "50 1 * * 0-5" ]]; then
-            # Start EC2 instance if not running
-            if [ "$INSTANCE_STATE" != "running" ]; then
-              echo "Starting EC2 instance: $INSTANCE_ID"
-              aws ec2 start-instances --instance-ids "$INSTANCE_ID"
-            else
-              echo "EC2 instance: $INSTANCE_ID is already running. No action needed."
-            fi
-          elif [[ "${{ github.event.schedule }}" == "55 1 * * 0-5" ]]; then
-            # Stop EC2 instance if not stopped
-            if [ "$INSTANCE_STATE" != "stopped" ]; then
-              echo "Stopping EC2 instance: $INSTANCE_ID"
-              aws ec2 stop-instances --instance-ids "$INSTANCE_ID"
-            else
-              echo "EC2 instance: $INSTANCE_ID is already stopped. No action needed."
-            fi
-          else
-            echo "Invalid cron schedule. Exiting."
-            exit 1
-          fi
+    - name: Manage EC2 Instance
+      if: env.action != 'none'
+      run: |
+        INSTANCE_ID="i-1234567890abcdef0" # Replace with your EC2 instance ID
+        if [[ "$action" == "start" ]]; then
+          echo "Starting EC2 instance..."
+          aws ec2 start-instances --instance-ids $INSTANCE_ID
+        elif [[ "$action" == "stop" ]]; then
+          echo "Stopping EC2 instance..."
+          aws ec2 stop-instances --instance-ids $INSTANCE_ID
+        fi
