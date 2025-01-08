@@ -2,10 +2,10 @@ name: Automatic EC2 Scheduler
 
 on:
   schedule:
-    # Stop EC2 instance at 09:30 AM IST (Sunday to Friday)
-    - cron: '0 4 * * 0-5'  # 4:00 AM UTC = 09:30 AM IST
-    # Start EC2 instance at 09:45 AM IST (Sunday to Friday)
-    - cron: '15 4 * * 0-5'  # 4:15 AM UTC = 09:45 AM IST
+    # Stop EC2 instance at 12:00 AM IST (Sunday to Friday)
+    - cron: '30 18 * * 0-5'  # 6:30 PM UTC = 12:00 AM IST
+    # Start EC2 instance at 08:00 AM IST (Sunday to Friday)
+    - cron: '30 2 * * 0-5'  # 2:30 AM UTC = 08:00 AM IST
 
 jobs:
   manage-ec2-instance:
@@ -32,10 +32,10 @@ jobs:
           # Get the action to be performed from the workflow schedule
           CRON_TIME="${{ github.event.schedule }}"
           
-          if [[ "$CRON_TIME" == "0 4 * * 0-5" ]]; then
-            echo "action=stop" >> $GITHUB_ENV
-          elif [[ "$CRON_TIME" == "15 4 * * 0-5" ]]; then
+          if [[ "$CRON_TIME" == "30 2 * * 0-5" ]]; then
             echo "action=start" >> $GITHUB_ENV
+          elif [[ "$CRON_TIME" == "30 18 * * 0-5" ]]; then
+            echo "action=stop" >> $GITHUB_ENV
           else
             echo "action=none" >> $GITHUB_ENV
           fi
