@@ -2,10 +2,10 @@ name: Automatic EC2 Scheduler
 
 on:
   schedule:
-    # Start EC2 instance at 7:52 AM IST (Sunday to Friday)
-    - cron: '22 2 * * 0-5'  # 2:22 AM UTC = 7:52 AM IST
-    # Stop EC2 instance at 7:57 AM IST (Sunday to Friday)
+    # Start EC2 instance at 7:57 AM IST (Sunday to Friday)
     - cron: '27 2 * * 0-5'  # 2:27 AM UTC = 7:57 AM IST
+    # Stop EC2 instance at 8:03 AM IST (Sunday to Friday)
+    - cron: '33 2 * * 0-5'  # 2:33 AM UTC = 8:03 AM IST
 
 jobs:
   manage-ec2-instance:
@@ -14,6 +14,10 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+
+      - name: Debug Current Time
+        run: |
+          echo "Current Time: $(date)"  # Debugging the current time
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
@@ -25,12 +29,15 @@ jobs:
       - name: Set EC2 Action
         id: set-action
         run: |
+          # Debug the CRON time triggered
+          echo "Triggered CRON Time: ${{ github.event.schedule }}"
+          
           # Get the current time of the cron job that triggered this workflow
           CRON_TIME="${{ github.event.schedule }}"
-          
-          if [[ "$CRON_TIME" == "22 2 * * 0-5" ]]; then
+
+          if [[ "$CRON_TIME" == "27 2 * * 0-5" ]]; then
             echo "action=start" >> $GITHUB_ENV
-          elif [[ "$CRON_TIME" == "27 2 * * 0-5" ]]; then
+          elif [[ "$CRON_TIME" == "33 2 * * 0-5" ]]; then
             echo "action=stop" >> $GITHUB_ENV
           else
             echo "action=none" >> $GITHUB_ENV
